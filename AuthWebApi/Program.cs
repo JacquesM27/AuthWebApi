@@ -1,4 +1,6 @@
+using AuthWebApi.Data;
 using AuthWebApi.Services.AuthService;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,9 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddDbContext<DataContext>(options => 
+    options.UseSqlite("Data Source=auth.db"));
+
 
 
 var app = builder.Build();

@@ -1,4 +1,5 @@
-﻿using AuthWebApi.DTO;
+﻿using AuthWebApi.Data;
+using AuthWebApi.DTO;
 using AuthWebApi.Model;
 using System.Security.Cryptography;
 
@@ -6,6 +7,13 @@ namespace AuthWebApi.Services.AuthService
 {
     public class AuthService : IAuthService
     {
+        private readonly DataContext _dataContext;
+
+        public AuthService(DataContext dataContext)
+        {
+            _dataContext = dataContext;
+        }
+
         public async Task<User> RegisterUser(UserDto request)
         {
             CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
@@ -16,6 +24,9 @@ namespace AuthWebApi.Services.AuthService
                 PasswordHash= passwordHash,
                 PasswordSalt= passwordSalt
             };
+
+            _dataContext.Users.Add(user);
+            await _dataContext.SaveChangesAsync();
             return user;
         }
 
