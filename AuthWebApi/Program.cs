@@ -28,6 +28,7 @@ builder.Services.AddSwaggerGen(options =>
 
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<DataContext>(options => 
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionString")));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
