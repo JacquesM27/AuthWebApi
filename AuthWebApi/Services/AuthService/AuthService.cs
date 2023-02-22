@@ -62,6 +62,32 @@ namespace AuthWebApi.Services.AuthService
             return user;
         }
 
+        public async Task<AuthResponseDto> RefreshToken()
+        {
+            var refreshToken = _httpContextAccessor?.HttpContext?.Request.Cookies["refreshToken"];
+            var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            if (user is null) 
+            {
+                return new AuthResponseDto { Message = "Invalid Refresh Token" };
+            }
+            else if (user.TokenExpires < DateTime.UtcNow)
+            {
+                return new AuthResponseDto { Message = "Token expired." };
+            }
+
+            string token = CreateToken(user);
+            var newRefreshToken = CreateRefreshToken();
+            SetRefreshToken(newRefreshToken, user);
+
+            return new AuthResponseDto 
+            { 
+                Success= true,
+                Token = token,
+                RefreshToken = newRefreshToken.Token,
+                TokenExpires = newRefreshToken.Expires
+            };
+        }
+
         private bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
         {
             using var hmac = new HMACSHA512(passwordSalt);
@@ -82,6 +108,7 @@ namespace AuthWebApi.Services.AuthService
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
             var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(
@@ -90,7 +117,7 @@ namespace AuthWebApi.Services.AuthService
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
             var token = new JwtSecurityToken(
                 claims: claims,
-                expires: DateTime.Now.AddDays(1),
+                expires: DateTime.UtcNow.AddDays(1),
                 signingCredentials: creds);
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
@@ -103,14 +130,14 @@ namespace AuthWebApi.Services.AuthService
             var refreshToken = new RefreshToken
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-                Expires = DateTime.Now.AddDays(7),
-                Created = DateTime.Now
+                Expires = DateTime.UtcNow.AddDays(7),
+                Created = DateTime.UtcNow
             };
 
             return refreshToken;
         }
        
-        private async void SetRefreshToken(RefreshToken refreshToken, User user)
+        private async Task SetRefreshToken(RefreshToken refreshToken, User user)
         {
             var cookieOptions = new CookieOptions
             {
