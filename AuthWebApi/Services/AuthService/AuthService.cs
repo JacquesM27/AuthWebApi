@@ -118,7 +118,9 @@ namespace AuthWebApi.Services.AuthService
             var token = new JwtSecurityToken(
                 claims: claims,
                 expires: DateTime.UtcNow.AddDays(1),
-                signingCredentials: creds);
+                signingCredentials: creds,
+                issuer: "secret key",
+                audience: "secret key2");
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
